@@ -17,7 +17,7 @@ public class HelloTest {
 	
 	@Test
 	public void goodbyeTest() {
-		assertTrue(!"Hello actions".equals(goodbyeString));
+		assertTrue("Hello actions".equals(goodbyeString));
 	}
 }
 
