@@ -1,4 +1,4 @@
-package com.test.cohort.engine;
+package com.test.cohort;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -17,7 +17,7 @@ public class HelloTest {
 	
 	@Test
 	public void goodbyeTest() {
-		assertTrue("Hello actions".equals(goodbyeString));
+		assertTrue(!"Hello actions".equals(goodbyeString));
 	}
 }
 
