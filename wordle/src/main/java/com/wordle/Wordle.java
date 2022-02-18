@@ -8,6 +8,7 @@ package com.wordle;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,19 +18,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Wordle {
 
 	private static final String NOT = "~";
 	
-	public static void main(String[] args) throws Exception {
-		
+
+	
+	public static List<String> getOrderedFiveWords(String[] args) throws IOException {
 		int length = 5;
 		Set<Character> contains = new HashSet<>();
 		Set<Character> doesNotContain = new HashSet<>();
 		
 		Map<Integer, Character> positionMap = new HashMap<>();
-		Map<Integer, Character> notPositionMap = new HashMap<>();
+		Map<Integer, Set<Character>> notPositionMap = new HashMap<>();
 		
 		if(args.length > 0) {
 			length = Integer.valueOf(args[0]);
@@ -50,7 +53,15 @@ public class Wordle {
 				if(code.contains(NOT)) {
 					int pos = Integer.parseInt(String.valueOf(code.charAt(2)));
 					
-					notPositionMap.put(pos, character);
+					Set<Character> existingNotChars = notPositionMap.get(pos);
+					
+					if(existingNotChars == null) {
+						existingNotChars = new HashSet<>();
+					}
+					
+					existingNotChars.add(character);
+					notPositionMap.put(pos, existingNotChars);
+					
 					contains.add(character);
 				}
 				else {
@@ -93,41 +104,7 @@ public class Wordle {
 				for(String word : words) {
 					word = word.toLowerCase();
 					
-					boolean matches = true;
-					
-					if(!doesNotContain.isEmpty()) {
-						for(Character character : doesNotContain) {
-							if(word.contains(String.valueOf(character))) {
-								matches = false;
-							}
-						}
-					}
-					
-					if(!contains.isEmpty()) {
-						for(Character character : contains) {
-							if(!word.contains(String.valueOf(character))) {
-								matches = false;
-							}
-						}
-					}
-					
-					if(!notPositionMap.isEmpty()) {
-						for(Entry<Integer, Character> entry : notPositionMap.entrySet()) {
-							char wordCharAtPos = word.charAt(entry.getKey());
-							if(entry.getValue().equals(wordCharAtPos)) {
-								matches = false;
-							}
-						}
-					}
-					
-					if(!positionMap.isEmpty()) {
-						for(Entry<Integer, Character> entry : positionMap.entrySet()) {
-							char wordCharAtPos = word.charAt(entry.getKey());
-							if(!entry.getValue().equals(wordCharAtPos)) {
-								matches = false;
-							}
-						}
-					}
+					boolean matches = validateWord(word, contains, doesNotContain, positionMap, notPositionMap);
 					
 					if(matches) {
 						updateCharacterDistribution(word);
@@ -138,43 +115,142 @@ public class Wordle {
 			}
 		}
 		
-		System.out.println("Constraints");
-		System.out.print("\tContains:");
-		for(Character character : contains) {
-			System.out.print(" " + character);
+		if(fiveLetterWords.isEmpty()) {
+			System.out.println("Zero matching dictonary words, adding made up words");
+			fiveLetterWords = makeStuffUp(contains, doesNotContain, positionMap, notPositionMap);
 		}
-		System.out.println();
 		
-		System.out.print("\tDoes Not Contain:");
-		for(Character character : doesNotContain) {
-			System.out.print(" " + character);
+		return orderWords(fiveLetterWords);
+	}
+	
+	private static boolean validateWord(String word, Set<Character> contains, Set<Character> doesNotContain, Map<Integer, Character> positionMap, Map<Integer, Set<Character>> notPositionMap) {
+		boolean matches = true;
+		
+		if(!doesNotContain.isEmpty()) {
+			for(Character character : doesNotContain) {
+				if(word.contains(String.valueOf(character))) {
+					matches = false;
+				}
+			}
 		}
-		System.out.println();
+		
+		if(!contains.isEmpty()) {
+			for(Character character : contains) {
+				if(!word.contains(String.valueOf(character))) {
+					matches = false;
+				}
+			}
+		}
+		
+		if(!notPositionMap.isEmpty()) {
+			for(Entry<Integer, Set<Character>> entry : notPositionMap.entrySet()) {
+				char wordCharAtPos = word.charAt(entry.getKey());
+				for(Character ch : entry.getValue()) {
+					if(ch.charValue() == wordCharAtPos) {
+						matches = false;
+					}
+				}
+			}
+		}
+		
+		if(!positionMap.isEmpty()) {
+			for(Entry<Integer, Character> entry : positionMap.entrySet()) {
+				char wordCharAtPos = word.charAt(entry.getKey());
+				if(!entry.getValue().equals(wordCharAtPos)) {
+					matches = false;
+				}
+			}
+		}
+		
+		return matches;
+	}
+	
+	private static List<Character> getAllLetters() {
+		List<Character> letters = new ArrayList<>();
+		letters.add('a');
+		letters.add('b');
+		letters.add('c');
+		letters.add('d');
+		letters.add('e');
+		letters.add('f');
+		letters.add('g');
+		letters.add('h');
+		letters.add('i');
+		letters.add('j');
+		letters.add('k');
+		letters.add('l');
+		letters.add('m');
+		letters.add('n');
+		letters.add('o');
+		letters.add('p');
+		letters.add('q');
+		letters.add('r');
+		letters.add('s');
+		letters.add('t');
+		letters.add('u');
+		letters.add('v');
+		letters.add('w');
+		letters.add('x');
+		letters.add('y');
+		letters.add('z');
+		
+		return letters;
+	}
+	
+	public static Set<String> makeStuffUp(Set<Character> contains, Set<Character> doesNotContain, Map<Integer, Character> positionMap, Map<Integer, Set<Character>> notPositionMap) {
+		
+		HashSet<String> madeUpWords = new HashSet<>();
+		
+		List<Character> firstLetterOptions = positionMap.containsKey(0) ? convertToList(positionMap.get(0)) : getAllLetters();
+		List<Character> secondLetterOptions = positionMap.containsKey(1) ? convertToList(positionMap.get(1)) : getAllLetters();
+		List<Character> thirdLetterOptions = positionMap.containsKey(2) ? convertToList(positionMap.get(2)) : getAllLetters();
+		List<Character> fourthLetterOptions = positionMap.containsKey(3) ? convertToList(positionMap.get(3)) : getAllLetters();
+		List<Character> fifthLetterOptions = positionMap.containsKey(4) ? convertToList(positionMap.get(4)) : getAllLetters();
+		
+		for(Character firstCh : firstLetterOptions) {
+			for(Character secondCh : secondLetterOptions) {
+				for(Character thirdCh : thirdLetterOptions) {
+					for(Character fourthCh : fourthLetterOptions) {
+						for(Character fifthCh : fifthLetterOptions) {
+							String word = firstCh.toString() + secondCh.toString() + thirdCh.toString() + fourthCh.toString() + fifthCh.toString();
+							if(validateWord(word, contains, doesNotContain, positionMap, notPositionMap)) {
+								madeUpWords.add(word);
+								updateCharacterDistribution(word);
+								
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		return madeUpWords;
+	}
+	
+	private static List<Character> convertToList(Character ch) {
+		List<Character> chList = new ArrayList<>();
+		chList.add(ch);
+		
+		return chList;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		
+		
+		List<String> fiveLetterWords = getOrderedFiveWords(args);
 		
 		System.out.println(fiveLetterWords.size() + " five letter words");
 		
-//		if(fiveLetterWords.size() > 10) {
-//			System.out.println("One example: " + fiveLetterWords.iterator().next());
-//		}
-//		else {
-//			for(String word : fiveLetterWords) {
-//				System.out.println("\t" + word);
-//			}
-//		}
-		
-		bestWord(fiveLetterWords);
-		
-//		System.out.println("Character frequency: ");
-//		System.out.println("\tFirst Letter");
-//		printCharacterFrequency(firstLetter);
-//		System.out.println("\tSecond Letter");
-//		printCharacterFrequency(secondLetter);
-//		System.out.println("\tThird Letter");
-//		printCharacterFrequency(thirdLetter);
-//		System.out.println("\tFourth Letter");
-//		printCharacterFrequency(fourthLetter);
-//		System.out.println("\tFifth Letter");
-//		printCharacterFrequency(fifthLetter);
+		if(fiveLetterWords.size() > 10) {
+			for(int i = 0; i < 10; i++) {
+				System.out.println(fiveLetterWords.get(i));
+			}
+		}
+		else {
+			for(String word : fiveLetterWords) {
+				System.out.println("\t" + word);
+			}
+		}
 	
 	}
 	
@@ -184,7 +260,7 @@ public class Wordle {
 	private static Map<Character, Integer> fourthLetter = new HashMap<>();
 	private static Map<Character, Integer> fifthLetter = new HashMap<>();
 	
-	private static String bestWord(Set<String> words) {
+	private static List<String> orderWords(Set<String> words) {
 		//How to determine the best guess?
 		/*
 		 * All different letters
@@ -203,7 +279,7 @@ public class Wordle {
 			score += secondLetter.get(word.charAt(1));
 			score += thirdLetter.get(word.charAt(2));
 			score += fourthLetter.get(word.charAt(3));
-//			score += fifthLetter.get(word.charAt(4));
+			score += fifthLetter.get(word.charAt(4));
 			
 			score = (int) (score * distinctChars);
 			
@@ -212,34 +288,33 @@ public class Wordle {
 		
 		Collections.sort(wordScores);
 		
+//		int max = wordScores.size() > 10 ? 10 : wordScores.size();
+//		for(int i = 0; i < max; i++) {
+//			StringNumber strNum = wordScores.get(i);
+//			System.out.println(strNum.getStr() + " " + strNum.getNumber());
+//		}
 		
-		int max = wordScores.size() > 10 ? 10 : wordScores.size();
-		for(int i = 0; i < max; i++) {
-			StringNumber strNum = wordScores.get(i);
-			System.out.println(strNum.getStr() + " " + strNum.getNumber());
-		}
-		
-		return wordScores.get(0).getStr();
+		return wordScores.stream().map(x -> x.getStr()).collect(Collectors.toList());
 	}
 	
-	private static void printCharacterFrequency(Map<Character, Integer> letterFrequency) {
-		List<StringNumber> charFreqList = new ArrayList<>();
-		
-		letterFrequency.forEach((k, v) -> charFreqList.add(new StringNumber(String.valueOf(k), v)));
-		
-		Collections.sort(charFreqList);
-		
-		for(StringNumber charFreq : charFreqList) {
-			System.out.println("\t\t" + charFreq.getStr() + " " + charFreq.getNumber());
-		}
-	}
+//	private static void printCharacterFrequency(Map<Character, Integer> letterFrequency) {
+//		List<StringNumber> charFreqList = new ArrayList<>();
+//		
+//		letterFrequency.forEach((k, v) -> charFreqList.add(new StringNumber(String.valueOf(k), v)));
+//		
+//		Collections.sort(charFreqList);
+//		
+//		for(StringNumber charFreq : charFreqList) {
+//			System.out.println("\t\t" + charFreq.getStr() + " " + charFreq.getNumber());
+//		}
+//	}
 	
 	private static void updateCharacterDistribution(String word) {
 		updateCharacterFrequency(firstLetter, word.charAt(0));
 		updateCharacterFrequency(secondLetter, word.charAt(1));
 		updateCharacterFrequency(thirdLetter, word.charAt(2));
 		updateCharacterFrequency(fourthLetter, word.charAt(3));
-//		updateCharacterFrequency(fifthLetter, word.charAt(4));
+		updateCharacterFrequency(fifthLetter, word.charAt(4));
 	}
 	
 	private static void updateCharacterFrequency(Map<Character, Integer> letterFrequency, Character ch) {
