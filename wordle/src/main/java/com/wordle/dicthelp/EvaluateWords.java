@@ -21,6 +21,8 @@ public class EvaluateWords {
 //		FileInputStream fis = new FileInputStream("/Users/jdoty/Desktop/testInput");
 		FileInputStream fis = new FileInputStream("/usr/share/dict/words");
 	    
+		String password = "234kfd089djlkj453l";
+		
 		int length = 5;
 	    
 		Set<String> knownFiveLetterWords = new HashSet<>();
