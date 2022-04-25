@@ -12,7 +12,7 @@
     <packaging>pom</packaging>
     
     <modules>
-        <module>cohort-engine</module>
+        <module>wordle</module>
     </modules>
 
     <licenses>

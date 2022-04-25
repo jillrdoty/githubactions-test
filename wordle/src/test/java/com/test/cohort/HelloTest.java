@@ -1,4 +1,4 @@
-package com.test.cohort.engine;
+package com.test.cohort;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
