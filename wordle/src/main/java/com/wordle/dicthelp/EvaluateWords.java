@@ -21,7 +21,7 @@ public class EvaluateWords {
 //		FileInputStream fis = new FileInputStream("/Users/jdoty/Desktop/testInput");
 		FileInputStream fis = new FileInputStream("/usr/share/dict/words");
 	    
-		String password = "234kfd089djlkj453l";
+		String password = "29d149f1-bc44-e7a0-c729-c7b770308565";
 		
 		int length = 5;
 	    
